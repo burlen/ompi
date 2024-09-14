@@ -25,6 +25,7 @@
 #include "ompi/mca/coll/base/coll_base_util.h"
 #include "ompi/mca/pml/pml.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 /* scatter algorithm variables */
 static int coll_tuned_scatter_forced_algorithm = 0;
@@ -162,9 +163,8 @@ ompi_coll_tuned_scatter_intra_do_this(const void *sbuf, size_t scount,
                                       mca_coll_base_module_t *module,
                                       int algorithm, int faninout, int segsize)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,
-                 "coll:tuned:scatter_intra_do_this selected algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60, "Selected algorithm %d topo faninout %d segsize %d",
+                       algorithm, faninout, segsize);
 
     switch (algorithm) {
     case (0):
@@ -185,8 +185,7 @@ ompi_coll_tuned_scatter_intra_do_this(const void *sbuf, size_t scount,
                                                       root, comm, module,
                                                       ompi_coll_tuned_scatter_blocking_send_ratio);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,
-                 "coll:tuned:scatter_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[SCATTER]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[SCATTER]);
     return MPI_ERR_ARG;
 }

@@ -24,6 +24,7 @@
 #include "ompi/mca/pml/pml.h"
 #include "ompi/op/op.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 #include "ompi/mca/coll/base/coll_base_topo.h"
 #include "ompi/mca/coll/base/coll_base_util.h"
 
@@ -129,8 +130,8 @@ int ompi_coll_tuned_allreduce_intra_do_this(const void *sbuf, void *rbuf, size_t
                                             mca_coll_base_module_t *module,
                                             int algorithm, int faninout, int segsize)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:allreduce_intra_do_this algorithm %d topo fan in/out %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60,"Algorithm %d topo fan in/out %d segsize %d",
+                       algorithm, faninout, segsize);
 
     switch (algorithm) {
     case (0):
@@ -150,7 +151,7 @@ int ompi_coll_tuned_allreduce_intra_do_this(const void *sbuf, void *rbuf, size_t
     case (7):
         return ompi_coll_base_allreduce_intra_allgather_reduce(sbuf, rbuf, count, dtype, op, comm, module);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:allreduce_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[ALLREDUCE]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[ALLREDUCE]);
     return (MPI_ERR_ARG);
 }

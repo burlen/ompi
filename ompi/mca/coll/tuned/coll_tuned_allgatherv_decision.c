@@ -22,6 +22,7 @@
 #include "ompi/mca/coll/coll.h"
 #include "ompi/mca/coll/base/coll_tags.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 #include "ompi/mca/coll/base/coll_base_topo.h"
 #include "ompi/mca/coll/base/coll_base_util.h"
 
@@ -132,9 +133,8 @@ int ompi_coll_tuned_allgatherv_intra_do_this(const void *sbuf, size_t scount,
                                              int algorithm, int faninout,
                                              int segsize)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,
-                 "coll:tuned:allgatherv_intra_do_this selected algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60, "Selected algorithm %d topo faninout %d segsize %d",
+                       algorithm, faninout, segsize);
 
     switch (algorithm) {
     case (0):
@@ -166,8 +166,7 @@ int ompi_coll_tuned_allgatherv_intra_do_this(const void *sbuf, size_t scount,
                                                          rbuf, rcounts, rdispls, rdtype,
                                                          comm, module);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,
-                 "coll:tuned:allgatherv_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[ALLGATHERV]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[ALLGATHERV]);
     return (MPI_ERR_ARG);
 }

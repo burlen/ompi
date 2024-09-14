@@ -27,6 +27,7 @@
 #include "ompi/mca/pml/pml.h"
 #include "ompi/op/op.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 /* reduce_scatter_block algorithm variables */
 static int coll_tuned_reduce_scatter_block_forced_algorithm = 0;
@@ -122,8 +123,8 @@ int ompi_coll_tuned_reduce_scatter_block_intra_do_this(const void *sbuf, void *r
                                                        mca_coll_base_module_t *module,
                                                        int algorithm, int faninout, int segsize)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:reduce_scatter_block_intra_do_this selected algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60, "Selected algorithm %d topo faninout %d segsize %d",
+                       algorithm, faninout, segsize);
 
     switch (algorithm) {
     case (0): return ompi_coll_tuned_reduce_scatter_block_intra_dec_fixed(sbuf, rbuf, rcount,
@@ -137,7 +138,7 @@ int ompi_coll_tuned_reduce_scatter_block_intra_do_this(const void *sbuf, void *r
     case (4): return ompi_coll_base_reduce_scatter_block_intra_butterfly(sbuf, rbuf, rcount, dtype, op, comm,
                                                                          module);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:reduce_scatter_block_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[REDUCESCATTERBLOCK]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[REDUCESCATTERBLOCK]);
     return (MPI_ERR_ARG);
 }

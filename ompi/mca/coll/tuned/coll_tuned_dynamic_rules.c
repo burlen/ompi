@@ -12,6 +12,7 @@
  * Copyright (c) 2011-2012 FUJITSU LIMITED.  All rights reserved.
  * Copyright (c) 2017      Research Organization for Information Science
  *                         and Technology (RIST). All rights reserved.
+ * Copyright (c) 2024      NVIDIA CORPORATION. All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -25,6 +26,7 @@
 #include "ompi/mca/mca.h"
 #include "ompi/constants.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 /* need to include our own topo prototypes so we can malloc data on the comm correctly */
 #include "ompi/mca/coll/base/coll_base_topo.h"
@@ -103,16 +105,16 @@ ompi_coll_msg_rule_t* ompi_coll_tuned_mk_msg_rules (int n_msg_rules, int alg_rul
 int ompi_coll_tuned_dump_msg_rule (ompi_coll_msg_rule_t* msg_p)
 {
     if (!msg_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"Message rule was a NULL ptr?!\n"));
+        COLL_TUNED_ERROR("Message rule was a NULL ptr?!\n");
         return (-1);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"alg_id %3d\tcom_id %3d\tcom_size %3d\tmsg_id %3d\t", msg_p->alg_rule_id,
-                 msg_p->com_rule_id, msg_p->mpi_comsize, msg_p->msg_rule_id));
+    COLL_TUNED_VERBOSE(80,"alg_id %3d\tcom_id %3d\tcom_size %3d\tmsg_id %3d\t", msg_p->alg_rule_id,
+                 msg_p->com_rule_id, msg_p->mpi_comsize, msg_p->msg_rule_id);
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"msg_size %10lu -> algorithm %2d\ttopo in/out %2d\tsegsize %5ld\tmax_requests %4d\n",
+    COLL_TUNED_VERBOSE(80,"msg_size %10lu -> algorithm %2d\ttopo in/out %2d\tsegsize %5ld\tmax_requests %4d\n",
                  msg_p->msg_size, msg_p->result_alg, msg_p->result_topo_faninout, msg_p->result_segsize,
-                 msg_p->result_max_requests));
+                 msg_p->result_max_requests);
 
     return (0);
 }
@@ -123,18 +125,18 @@ int ompi_coll_tuned_dump_com_rule (ompi_coll_com_rule_t* com_p)
     int i;
 
     if (!com_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"Com rule was a NULL ptr?!\n"));
+        COLL_TUNED_ERROR("Com rule was a NULL ptr?!\n");
         return (-1);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "alg_id %3d\tcom_id %3d\tcom_size %3d\t", com_p->alg_rule_id, com_p->com_rule_id, com_p->mpi_comsize));
+    COLL_TUNED_VERBOSE(80,"alg_id %3d\tcom_id %3d\tcom_size %3d\t", com_p->alg_rule_id, com_p->com_rule_id, com_p->mpi_comsize);
 
     if (!com_p->n_msg_sizes) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"no msgsizes defined\n"));
+        COLL_TUNED_ERROR("no msgsizes defined\n");
         return (0);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"number of message sizes %3d\n", com_p->n_msg_sizes));
+    COLL_TUNED_VERBOSE(80,"number of message sizes %3d\n", com_p->n_msg_sizes);
 
     for (i=0;i<com_p->n_msg_sizes;i++) {
         ompi_coll_tuned_dump_msg_rule (&(com_p->msg_rules[i]));
@@ -149,18 +151,18 @@ int ompi_coll_tuned_dump_alg_rule (ompi_coll_alg_rule_t* alg_p)
     int i;
 
     if (!alg_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"Algorithm rule was a NULL ptr?!\n"));
+        COLL_TUNED_ERROR("Algorithm rule was a NULL ptr?!\n");
         return (-1);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"alg_id %3d\t", alg_p->alg_rule_id));
+    COLL_TUNED_VERBOSE(80,"alg_id %3d\t", alg_p->alg_rule_id);
 
     if (!alg_p->n_com_sizes) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"no coms defined\n"));
+        COLL_TUNED_ERROR("no coms defined\n");
         return (0);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"number of com sizes %3d\n", alg_p->n_com_sizes));
+    COLL_TUNED_VERBOSE(80,"number of com sizes %3d\n", alg_p->n_com_sizes);
 
     for (i=0;i<alg_p->n_com_sizes;i++) {
         ompi_coll_tuned_dump_com_rule (&(alg_p->com_rules[i]));
@@ -175,11 +177,11 @@ int ompi_coll_tuned_dump_all_rules (ompi_coll_alg_rule_t* alg_p, int n_rules)
     int i;
 
     if (!alg_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"Algorithm rule was a NULL ptr?!\n"));
+        COLL_TUNED_ERROR("Algorithm rule was a NULL ptr?!\n");
         return (-1);
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"Number of algorithm rules %3d\n", n_rules));
+    COLL_TUNED_VERBOSE(80,"Number of algorithm rules %3d\n", n_rules);
 
     for (i=0;i<n_rules;i++) {
         ompi_coll_tuned_dump_alg_rule (&(alg_p[i]));
@@ -199,7 +201,7 @@ int ompi_coll_tuned_free_msg_rules_in_com_rule (ompi_coll_com_rule_t* com_p)
     ompi_coll_msg_rule_t* msg_p;
 
     if (!com_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"attempt to free NULL com_rule ptr\n"));
+        COLL_TUNED_ERROR("attempt to free NULL com_rule ptr\n");
         return (-1);
     }
 
@@ -207,7 +209,7 @@ int ompi_coll_tuned_free_msg_rules_in_com_rule (ompi_coll_com_rule_t* com_p)
         msg_p = com_p->msg_rules;
 
         if (!msg_p) {
-            OPAL_OUTPUT((ompi_coll_tuned_stream,"attempt to free NULL msg_rules when msg count was %d\n", com_p->n_msg_sizes));
+            COLL_TUNED_ERROR("attempt to free NULL msg_rules when msg count was %d\n", com_p->n_msg_sizes);
             rc = -1; /* some error */
         }
         else {
@@ -230,7 +232,7 @@ int ompi_coll_tuned_free_coms_in_alg_rule (ompi_coll_alg_rule_t* alg_p)
     ompi_coll_com_rule_t* com_p;
 
     if (!alg_p) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"attempt to free NULL alg_rule ptr\n"));
+        COLL_TUNED_ERROR("attempt to free NULL alg_rule ptr\n");
         return (-1);
     }
 
@@ -238,7 +240,7 @@ int ompi_coll_tuned_free_coms_in_alg_rule (ompi_coll_alg_rule_t* alg_p)
         com_p = alg_p->com_rules;
 
         if (!com_p) {
-            OPAL_OUTPUT((ompi_coll_tuned_stream,"attempt to free NULL com_rules when com count was %d\n", alg_p->n_com_sizes));
+            COLL_TUNED_ERROR("attempt to free NULL com_rules when com count was %d\n", alg_p->n_com_sizes);
         } else {
             /* ok, memory exists for the com rules so free their message rules first */
             for( i = 0; i < alg_p->n_com_sizes; i++ ) {
@@ -286,7 +288,7 @@ int ompi_coll_tuned_free_all_rules (ompi_coll_alg_rule_t* alg_p, int n_algs)
  * (which can be used in the coll_tuned_get_target_method_params() call)
  *
  */
-ompi_coll_com_rule_t* ompi_coll_tuned_get_com_rule_ptr (ompi_coll_alg_rule_t* rules, int alg_id, int mpi_comsize)
+ompi_coll_com_rule_t* ompi_coll_tuned_get_com_rule_ptr (ompi_coll_alg_rule_t* rules, int alg_id, int mpi_comsize, int mpi_comrank)
 {
     ompi_coll_alg_rule_t*  alg_p = (ompi_coll_alg_rule_t*) NULL;
     ompi_coll_com_rule_t*  com_p = (ompi_coll_com_rule_t*) NULL;
@@ -319,8 +321,11 @@ ompi_coll_com_rule_t* ompi_coll_tuned_get_com_rule_ptr (ompi_coll_alg_rule_t* ru
         i++;
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"Selected the following com rule id %d\n", best_com_p->com_rule_id));
-    ompi_coll_tuned_dump_com_rule (best_com_p);
+    COLL_TUNED_VERBOSE(60,"Selected communicator rule id %d\n", best_com_p->com_rule_id);
+
+    if ((0 == mpi_comrank) && (opal_output_check_verbosity(80, ompi_coll_tuned_stream))) {
+        ompi_coll_tuned_dump_com_rule (best_com_p);
+    }
 
     return (best_com_p);
 }
@@ -374,8 +379,10 @@ int ompi_coll_tuned_get_target_method_params (ompi_coll_com_rule_t* base_com_rul
         i++;
     }
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"Selected the following msg rule id %d\n", best_msg_p->msg_rule_id));
-    ompi_coll_tuned_dump_msg_rule (best_msg_p);
+    COLL_TUNED_VERBOSE(60,"Selected message rule id %d\n", best_msg_p->msg_rule_id);
+    if (opal_output_check_verbosity(80, ompi_coll_tuned_stream)) {
+        ompi_coll_tuned_dump_msg_rule (best_msg_p);
+    }
 
     /* return the segment size */
     *result_topo_faninout = best_msg_p->result_topo_faninout;

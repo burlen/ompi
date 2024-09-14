@@ -24,6 +24,7 @@
 #include "ompi/mca/pml/pml.h"
 #include "ompi/op/op.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 /* reduce algorithm variables */
 static int coll_tuned_reduce_forced_algorithm = 0;
@@ -153,8 +154,8 @@ int ompi_coll_tuned_reduce_intra_do_this(const void *sbuf, void* rbuf, size_t co
                                          int algorithm, int faninout,
                                          int segsize, int max_requests )
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:reduce_intra_do_this selected algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60,"Selected algorithm %d topo faninout %d segsize %d max requests %d",
+                       algorithm, faninout, segsize, max_requests);
 
     switch (algorithm) {
     case (0):  return ompi_coll_tuned_reduce_intra_dec_fixed(sbuf, rbuf, count, dtype,
@@ -183,7 +184,7 @@ int ompi_coll_tuned_reduce_intra_do_this(const void *sbuf, void* rbuf, size_t co
                                                           segsize, max_requests,
                                                           faninout);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:reduce_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[REDUCE]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[REDUCE]);
     return (MPI_ERR_ARG);
 }

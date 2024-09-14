@@ -22,6 +22,7 @@
 #include "ompi/mca/coll/base/coll_tags.h"
 #include "ompi/mca/pml/pml.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 #include "ompi/mca/coll/base/coll_base_topo.h"
 #include "ompi/mca/coll/base/coll_base_util.h"
 
@@ -139,8 +140,8 @@ int ompi_coll_tuned_bcast_intra_do_this(void *buf, size_t count,
                                         mca_coll_base_module_t *module,
                                         int algorithm, int faninout, int segsize)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:bcast_intra_do_this algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60,"Algorithm %d topo faninout %d segsize %d",
+                       algorithm, faninout, segsize);
 
     switch (algorithm) {
     case (0):
@@ -165,7 +166,7 @@ int ompi_coll_tuned_bcast_intra_do_this(void *buf, size_t count,
     case (9):
         return ompi_coll_base_bcast_intra_scatter_allgather_ring(buf, count, dtype, root, comm, module, segsize);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:bcast_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[BCAST]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[BCAST]);
     return (MPI_ERR_ARG);
 }

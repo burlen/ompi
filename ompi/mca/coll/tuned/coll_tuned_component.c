@@ -34,10 +34,10 @@
 #include "ompi_config.h"
 #include "opal/util/output.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 #include "mpi.h"
 #include "ompi/mca/coll/coll.h"
-#include "coll_tuned.h"
 #include "coll_tuned_dynamic_file.h"
 
 /*
@@ -50,6 +50,7 @@ const char *ompi_coll_tuned_component_version_string =
  * Global variable
  */
 int   ompi_coll_tuned_stream = -1;
+int   ompi_coll_tuned_verbose = 0;
 int   ompi_coll_tuned_priority = 30;
 bool  ompi_coll_tuned_use_dynamic_rules = false;
 char* ompi_coll_tuned_dynamic_rules_filename = (char*) NULL;
@@ -124,6 +125,12 @@ mca_coll_tuned_component_t mca_coll_tuned_component = {
 
 static int tuned_register(void)
 {
+    mca_base_component_var_register(&mca_coll_tuned_component.super.collm_version,
+                                    "verbose", "Verbose level of the tuned coll component",
+                                    MCA_BASE_VAR_TYPE_INT, NULL, 0, MCA_BASE_VAR_FLAG_SETTABLE,
+                                    OPAL_INFO_LVL_6,
+                                    MCA_BASE_VAR_SCOPE_ALL,
+                                    &ompi_coll_tuned_verbose);
 
     /* Use a low priority, but allow other components to be lower */
     ompi_coll_tuned_priority = 30;
@@ -210,11 +217,14 @@ static int tuned_open(void)
 {
     int rc;
 
-#if OPAL_ENABLE_DEBUG
-    if (ompi_coll_base_framework.framework_verbose) {
+    /* Get the global coll verbosity: it will be ours */
+    if (ompi_coll_tuned_verbose) {
         ompi_coll_tuned_stream = opal_output_open(NULL);
+        opal_output_set_verbosity(ompi_coll_tuned_stream,
+                                  ompi_coll_tuned_verbose);
+    } else {
+        ompi_coll_tuned_stream = ompi_coll_base_framework.framework_output;
     }
-#endif  /* OPAL_ENABLE_DEBUG */
 
     /* now check that the user hasn't overrode any of the decision functions if dynamic rules are enabled */
     /* the user can redo this before every comm dup/create if they like */
@@ -227,20 +237,15 @@ static int tuned_open(void)
     /* by default DISABLE dynamic rules and instead use fixed [if based] rules */
     if (ompi_coll_tuned_use_dynamic_rules) {
         if( ompi_coll_tuned_dynamic_rules_filename ) {
-            OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:component_open Reading collective rules file [%s]",
-                         ompi_coll_tuned_dynamic_rules_filename));
             rc = ompi_coll_tuned_read_rules_config_file( ompi_coll_tuned_dynamic_rules_filename,
                                                          &(mca_coll_tuned_component.all_base_rules), COLLCOUNT);
-            if( rc >= 0 ) {
-                OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:module_open Read %d valid rules\n", rc));
-            } else {
-                OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:module_open Reading collective rules file failed\n"));
+            if( rc < 0 ) {
+                COLL_TUNED_ERROR("Reading collective rules file \"%s\" failed",
+                                 ompi_coll_tuned_dynamic_rules_filename);
                 mca_coll_tuned_component.all_base_rules = NULL;
             }
         }
     }
-
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:component_open: done!"));
 
     return OMPI_SUCCESS;
 }
@@ -249,12 +254,8 @@ static int tuned_open(void)
 /* i.e. alg table and dynamic changeable rules if allocated etc */
 static int tuned_close(void)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:component_close: called"));
-
     /* dealloc alg table if allocated */
     /* dealloc dynamic changeable rules if allocated */
-
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:component_close: done!"));
 
     if( NULL != mca_coll_tuned_component.all_base_rules ) {
         ompi_coll_tuned_free_all_rules(mca_coll_tuned_component.all_base_rules, COLLCOUNT);

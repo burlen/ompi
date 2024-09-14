@@ -24,6 +24,7 @@
 #include "ompi/mca/pml/pml.h"
 #include "ompi/op/op.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 
 /* exscan algorithm variables */
 static int coll_tuned_exscan_forced_algorithm = 0;
@@ -92,8 +93,7 @@ int ompi_coll_tuned_exscan_intra_do_this(const void *sbuf, void* rbuf, size_t co
                                          mca_coll_base_module_t *module,
                                          int algorithm)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:exscan_intra_do_this selected algorithm %d",
-                 algorithm));
+    COLL_TUNED_VERBOSE(60,"Selected algorithm %d", algorithm);
 
     switch (algorithm) {
     case (0):
@@ -102,7 +102,7 @@ int ompi_coll_tuned_exscan_intra_do_this(const void *sbuf, void* rbuf, size_t co
     case (2):  return ompi_coll_base_exscan_intra_recursivedoubling(sbuf, rbuf, count, dtype,
                                                                     op, comm, module);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:exscan_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[EXSCAN]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[EXSCAN]);
     return (MPI_ERR_ARG);
 }

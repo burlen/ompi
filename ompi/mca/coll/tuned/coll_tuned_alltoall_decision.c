@@ -23,6 +23,7 @@
 #include "ompi/mca/coll/base/coll_tags.h"
 #include "ompi/mca/pml/pml.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 #include "ompi/mca/coll/base/coll_base_topo.h"
 #include "ompi/mca/coll/base/coll_base_util.h"
 
@@ -42,6 +43,21 @@ static const mca_base_var_enum_value_t alltoall_algorithms[] = {
     {5, "two_proc"},
     {0, NULL}
 };
+
+/* given an algorithm enumeration return a sring with its name */
+static const char *get_alltoall_algorithm_name(int alg_id)
+{
+    const char *alg_name = "invalid";
+    switch (alg_id) {
+        case 0: alg_name = "fixed decision"; break;
+        case 1: alg_name = "linear"; break;
+        case 2: alg_name = "pairwise"; break;
+        case 3: alg_name = "modified_bruck"; break;
+        case 4: alg_name = "linear_sync"; break;
+        case 5: alg_name = "two_proc"; break;
+    }
+    return alg_name;
+}
 
 /* The following are used by dynamic and forced rules */
 
@@ -164,8 +180,8 @@ int ompi_coll_tuned_alltoall_intra_do_this(const void *sbuf, size_t scount,
                                            int algorithm, int faninout, int segsize,
                                            int max_requests)
 {
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:alltoall_intra_do_this selected algorithm %d topo faninout %d segsize %d",
-                 algorithm, faninout, segsize));
+    COLL_TUNED_VERBOSE(60,"Selected algorithm %d (%s) topo faninout %d segsize %d max requests %d",
+                       algorithm, get_alltoall_algorithm_name(algorithm), faninout, segsize, max_requests);
 
     switch (algorithm) {
     case (0):
@@ -181,7 +197,7 @@ int ompi_coll_tuned_alltoall_intra_do_this(const void *sbuf, size_t scount,
     case (5):
         return ompi_coll_base_alltoall_intra_two_procs(sbuf, scount, sdtype, rbuf, rcount, rdtype, comm, module);
     } /* switch */
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:alltoall_intra_do_this attempt to select algorithm %d when only 0-%d is valid?",
-                 algorithm, ompi_coll_tuned_forced_max_algorithms[ALLTOALL]));
+    COLL_TUNED_ERROR("Attempt to select algorithm %d when only 0-%d is valid?",
+                     algorithm, ompi_coll_tuned_forced_max_algorithms[ALLTOALL]);
     return (MPI_ERR_ARG);
 }

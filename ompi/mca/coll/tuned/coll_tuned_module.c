@@ -32,6 +32,7 @@
 #include "ompi/mca/coll/base/base.h"
 #include "ompi/mca/coll/base/coll_base_topo.h"
 #include "coll_tuned.h"
+#include "coll_tuned_debug.h"
 #include "coll_tuned_dynamic_rules.h"
 #include "coll_tuned_dynamic_file.h"
 
@@ -60,15 +61,13 @@ mca_coll_base_module_t *
 ompi_coll_tuned_comm_query(struct ompi_communicator_t *comm, int *priority)
 {
     mca_coll_tuned_module_t *tuned_module;
-
-    OPAL_OUTPUT((ompi_coll_tuned_stream, "coll:tuned:module_tuned query called"));
+    *priority = ompi_coll_tuned_priority;
 
     /**
      * No support for inter-communicator yet.
      */
     if (OMPI_COMM_IS_INTER(comm)) {
         *priority = 0;
-        return NULL;
     }
 
     /**
@@ -77,13 +76,16 @@ ompi_coll_tuned_comm_query(struct ompi_communicator_t *comm, int *priority)
      */
     if (OMPI_COMM_IS_INTRA(comm) && ompi_comm_size(comm) < 2) {
         *priority = 0;
+    }
+
+    COLL_TUNED_VERBOSE(60,"coll tuned priority %d", ompi_coll_tuned_priority);
+
+    if (0  == *priority) {
         return NULL;
     }
 
     tuned_module = OBJ_NEW(mca_coll_tuned_module_t);
     if (NULL == tuned_module) return NULL;
-
-    *priority = ompi_coll_tuned_priority;
 
     /*
      * Choose whether to use [intra|inter] decision functions
@@ -176,13 +178,13 @@ ompi_coll_tuned_forced_getvalues( enum COLLTYPE type,
         if( NULL != mca_coll_tuned_component.all_base_rules ) {         \
             (TMOD)->com_rules[(TYPE)]                                   \
                 = ompi_coll_tuned_get_com_rule_ptr( mca_coll_tuned_component.all_base_rules, \
-                                                    (TYPE), size );     \
+                                                    (TYPE), size, rank );     \
             if( NULL != (TMOD)->com_rules[(TYPE)] ) {                   \
                 need_dynamic_decision = 1;                              \
             }                                                           \
         }                                                               \
         if( 1 == need_dynamic_decision ) {                              \
-            OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned: enable dynamic selection for "#TYPE)); \
+            COLL_TUNED_VERBOSE(60,"coll:tuned: enable dynamic selection for "#TYPE); \
             EXECUTE;                                                    \
         }                                                               \
     } while(0)
@@ -194,11 +196,9 @@ static int
 tuned_module_enable( mca_coll_base_module_t *module,
                      struct ompi_communicator_t *comm )
 {
-    int size;
+    int rank, size;
     mca_coll_tuned_module_t *tuned_module = (mca_coll_tuned_module_t *) module;
     mca_coll_base_comm_t *data = NULL;
-
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:module_init called."));
 
     /* Allocate the data that hangs off the communicator */
     if (OMPI_COMM_IS_INTER(comm)) {
@@ -206,6 +206,7 @@ tuned_module_enable( mca_coll_base_module_t *module,
     } else {
         size = ompi_comm_size(comm);
     }
+    rank = ompi_comm_rank(comm);
 
     /**
      * we still malloc data as it is used by the TUNED modules
@@ -225,7 +226,7 @@ tuned_module_enable( mca_coll_base_module_t *module,
     }
 
     if (ompi_coll_tuned_use_dynamic_rules) {
-        OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:module_init MCW & Dynamic"));
+        COLL_TUNED_VERBOSE(60,"MCA & Dynamic");
 
         /**
          * next dynamic state, recheck all forced rules as well
@@ -304,7 +305,7 @@ tuned_module_enable( mca_coll_base_module_t *module,
     /* All done */
     tuned_module->super.base_data = data;
 
-    OPAL_OUTPUT((ompi_coll_tuned_stream,"coll:tuned:module_init Tuned is in use"));
+    COLL_TUNED_VERBOSE(60,"coll tuned is enabled");
     return OMPI_SUCCESS;
 }
 
@@ -332,5 +333,6 @@ tuned_module_disable(mca_coll_base_module_t *module,
     TUNED_UNINSTALL_COLL_API(comm, tuned_module, scatter);
     TUNED_UNINSTALL_COLL_API(comm, tuned_module, scatterv);
 
+    COLL_TUNED_VERBOSE(60,"coll tuned is disabled");
     return OMPI_SUCCESS;
 }
